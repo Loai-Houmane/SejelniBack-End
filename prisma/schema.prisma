@@ -1,0 +1,190 @@
+// Prisma schema for SEJELNI platform
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+//roles enum
+enum Role {
+  ADMIN
+  AGENCY
+  STUDENT
+}
+
+model Agency {
+  id           Int           @id @default(autoincrement())
+  name         String?        @unique
+  email        String        @unique
+  password     String
+  role         Role          @default(AGENCY)
+  description  String?
+  logoUrl      String?
+  address      String?
+  phoneNumber  String?
+  Website      String?
+  instagram    String?
+  facebook     String?
+  countries    String[]
+  contactInfo  String?
+  videoUrl     String?
+  photoGallery String[]
+  status       AgencyStatus  @default(PENDING)
+  leads        Lead[]
+  reviews      Review[]
+  offers       Offer[]
+  Appointment  Appointment[]
+  Services     Services[]
+}
+
+model Services {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  price       Float
+  sales       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  agencyId    Int
+  agency      Agency   @relation(fields: [agencyId], references: [id])
+
+  Order Order[]
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  studentId      Int
+  status         OrderStatus @default(PENDING)
+  serviceDetails String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  serviceId      Int
+  student        Student     @relation(fields: [studentId], references: [id])
+  service        Services    @relation(fields: [serviceId], references: [id])
+
+  @@unique([studentId, serviceId])
+}
+
+model Admin {
+  id       Int       @id @default(autoincrement())
+  username String    @unique
+  password String
+  role     String    @default("ADMIN")
+  articles Article[] // One-to-many relation field
+}
+
+model Article {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  adminId   Int
+  admin     Admin    @relation(fields: [adminId], references: [id])
+}
+
+model Student {
+  id               Int           @id @default(autoincrement())
+  firstName        String?
+  lastName         String?
+  email            String        @unique
+  password         String
+  profilePicture   String?
+  role             Role          @default(STUDENT)
+  subscriptionDate DateTime      @default("2020-01-01T00:00:00.000Z")
+  orders           Order[]
+  appointments     Appointment[]
+  reviews          Review[]
+  Lead             Lead[]
+}
+
+model Lead {
+  id        Int        @id @default(autoincrement())
+  status    LeadStatus @default(NEW)
+  agencyId  Int
+  studentId Int
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  agency  Agency  @relation(fields: [agencyId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model Review {
+  id        Int          @id @default(autoincrement())
+  studentId Int
+  agencyId  Int
+  rating    Float
+  comment   String?
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+  agency  Agency  @relation(fields: [agencyId], references: [id])
+
+  @@unique([studentId, agencyId])
+}
+
+model Offer {
+  id          Int      @id @default(autoincrement())
+  agencyId    Int
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+}
+
+model Appointment {
+  id            Int               @id @default(autoincrement())
+  studentId     Int
+  agencyId      Int
+  scheduledTime DateTime
+  status        AppointmentStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+  agency  Agency  @relation(fields: [agencyId], references: [id])
+}
+
+enum AgencyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  CONVERTED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
